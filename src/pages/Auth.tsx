@@ -71,11 +71,15 @@ const Auth = () => {
             }}
             providers={[]}
             redirectTo={`${window.location.origin}/dashboard`}
+            onError={(error) => {
+              console.error("Auth error:", error);
+              setError(error.message);
+            }}
             additionalData={{
               role: 'buyer',
               full_name: '',
               company_name: '',
-              phone: '',
+              phone: ''
             }}
           />
         </CardContent>
