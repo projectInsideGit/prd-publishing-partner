@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Auth as SupabaseAuth } from "@supabase/auth-ui-react";
 import { ThemeSupa } from "@supabase/auth-ui-shared";
@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 
 const Auth = () => {
   const navigate = useNavigate();
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     // Check if user is already logged in
@@ -24,6 +25,12 @@ const Auth = () => {
       async (event, session) => {
         if (event === "SIGNED_IN" && session) {
           navigate("/dashboard");
+        }
+        if (event === "USER_UPDATED" && session) {
+          const { error } = await supabase.auth.getSession();
+          if (error) {
+            setError(error.message);
+          }
         }
       }
     );
@@ -43,6 +50,11 @@ const Auth = () => {
           </CardDescription>
         </CardHeader>
         <CardContent>
+          {error && (
+            <Alert variant="destructive" className="mb-4">
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
           <SupabaseAuth
             supabaseClient={supabase}
             appearance={{
