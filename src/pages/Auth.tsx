@@ -5,6 +5,7 @@ import { ThemeSupa } from "@supabase/auth-ui-shared";
 import { supabase } from "@/integrations/supabase/client";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { AuthError } from "@supabase/supabase-js";
 
 const Auth = () => {
   const navigate = useNavigate();
@@ -30,14 +31,30 @@ const Auth = () => {
         if (event === "USER_UPDATED" && session) {
           const { error } = await supabase.auth.getSession();
           if (error) {
-            setError(error.message);
+            setError(getErrorMessage(error));
           }
+        }
+        if (event === "SIGNED_OUT") {
+          setError(null);
         }
       }
     );
 
     return () => subscription.unsubscribe();
   }, [navigate]);
+
+  const getErrorMessage = (error: AuthError) => {
+    switch (error.message) {
+      case "Invalid login credentials":
+        return "Invalid email or password. Please check your credentials and try again.";
+      case "Email not confirmed":
+        return "Please verify your email address before signing in.";
+      case "Database error saving new user":
+        return "There was an error creating your account. Please try again.";
+      default:
+        return error.message;
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
@@ -71,10 +88,6 @@ const Auth = () => {
             }}
             providers={[]}
             redirectTo={`${window.location.origin}/dashboard`}
-            onError={(error) => {
-              console.error("Auth error:", error);
-              setError(error.message);
-            }}
             additionalData={{
               role: 'buyer',
               full_name: '',
