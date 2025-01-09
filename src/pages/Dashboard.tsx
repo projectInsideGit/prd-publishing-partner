@@ -3,10 +3,13 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import type { Database } from "@/integrations/supabase/types";
+
+type Profile = Database['public']['Tables']['profiles']['Row'];
 
 const Dashboard = () => {
   const navigate = useNavigate();
-  const [profile, setProfile] = useState<any>(null);
+  const [profile, setProfile] = useState<Profile | null>(null);
 
   useEffect(() => {
     const checkUser = async () => {
@@ -17,11 +20,16 @@ const Dashboard = () => {
       }
 
       // Fetch user profile
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("id", session.user.id)
+      const { data: profile, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', session.user.id)
         .single();
+
+      if (error) {
+        console.error('Error fetching profile:', error);
+        return;
+      }
 
       setProfile(profile);
     };
@@ -46,6 +54,8 @@ const Dashboard = () => {
               <div>
                 <p>Welcome, {profile.full_name}</p>
                 <p>Role: {profile.role}</p>
+                {profile.company_name && <p>Company: {profile.company_name}</p>}
+                {profile.phone && <p>Phone: {profile.phone}</p>}
               </div>
             )}
             <Button onClick={handleSignOut}>Sign Out</Button>
