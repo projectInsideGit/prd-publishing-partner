@@ -89,7 +89,7 @@ const Auth = () => {
             providers={[]}
             redirectTo={`${window.location.origin}/dashboard`}
             additionalData={{
-              role: 'buyer',
+              role: 'buyer', // Default role
               full_name: '',
               company_name: '',
               phone: ''
