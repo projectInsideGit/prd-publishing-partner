@@ -21,37 +21,80 @@ const Dashboard = () => {
   useEffect(() => {
     const checkUser = async () => {
       try {
-        const { data: { session } } = await supabase.auth.getSession();
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+        
+        if (sessionError) {
+          console.error('Session error:', sessionError);
+          setError('Failed to get session. Please try logging in again.');
+          return;
+        }
+
         if (!session) {
+          console.log('No session found, redirecting to auth');
           navigate("/auth");
           return;
         }
 
-        console.log("Session found:", session.user.id);
+        console.log("Session user ID:", session.user.id);
         setEmail(session.user.email);
 
+        // Fetch profile with detailed logging
         const { data: profile, error: profileError } = await supabase
           .from('profiles')
           .select('*')
           .eq('id', session.user.id)
-          .maybeSingle();
+          .single();
 
         if (profileError) {
-          console.error('Error fetching profile:', profileError);
-          setError('Failed to load profile data. Please try again later.');
+          console.error('Profile fetch error:', profileError);
+          if (profileError.code === 'PGRST116') {
+            console.log('No profile found for user ID:', session.user.id);
+            // Try to create profile if it doesn't exist
+            const { error: insertError } = await supabase
+              .from('profiles')
+              .insert([
+                {
+                  id: session.user.id,
+                  full_name: '',
+                  role: 'buyer'
+                }
+              ]);
+
+            if (insertError) {
+              console.error('Failed to create profile:', insertError);
+              setError('Failed to create your profile. Please contact support.');
+            } else {
+              // Fetch the newly created profile
+              const { data: newProfile, error: newProfileError } = await supabase
+                .from('profiles')
+                .select('*')
+                .eq('id', session.user.id)
+                .single();
+
+              if (newProfileError) {
+                console.error('Error fetching new profile:', newProfileError);
+                setError('Error loading your new profile. Please try refreshing the page.');
+              } else {
+                console.log('New profile created:', newProfile);
+                setProfile(newProfile);
+              }
+            }
+          } else {
+            setError('Failed to load profile data. Please try again later.');
+          }
           return;
         }
 
         if (!profile) {
-          console.error('No profile found for user:', session.user.id);
-          setError('Your profile could not be found. This might happen if your account was not properly set up. Please contact support for assistance.');
+          console.error('No profile data returned for user:', session.user.id);
+          setError('Your profile could not be found. Please contact support.');
           return;
         }
 
         console.log("Profile loaded successfully:", profile);
         setProfile(profile);
       } catch (err) {
-        console.error('Error in checkUser:', err);
+        console.error('Unexpected error in checkUser:', err);
         setError('An unexpected error occurred. Please try again later.');
       } finally {
         setLoading(false);
