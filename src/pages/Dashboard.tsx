@@ -3,11 +3,12 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
-import { CalendarDays, Building2, Phone, Mail, AlertCircle } from "lucide-react";
+import { CalendarDays, Building2, Phone, Mail } from "lucide-react";
 import type { Database } from "@/integrations/supabase/types";
+import { ProfileHeader } from "@/components/dashboard/ProfileHeader";
+import { ProfileInfoCard } from "@/components/dashboard/ProfileInfoCard";
+import { ErrorDisplay } from "@/components/dashboard/ErrorDisplay";
+import { LoadingState } from "@/components/dashboard/LoadingState";
 
 type Profile = Database['public']['Tables']['profiles']['Row'];
 
@@ -38,7 +39,6 @@ const Dashboard = () => {
         console.log("Session user ID:", session.user.id);
         setEmail(session.user.email);
 
-        // First attempt to fetch the profile
         const { data: existingProfile, error: profileError } = await supabase
           .from('profiles')
           .select('*')
@@ -51,7 +51,6 @@ const Dashboard = () => {
           return;
         }
 
-        // If no profile exists, create one
         if (!existingProfile) {
           console.log('No profile found, creating new profile...');
           const { data: newProfile, error: insertError } = await supabase
@@ -107,15 +106,7 @@ const Dashboard = () => {
   };
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-background p-4">
-        <Card>
-          <CardContent className="p-6">
-            <p className="text-center">Loading your profile...</p>
-          </CardContent>
-        </Card>
-      </div>
-    );
+    return <LoadingState />;
   }
 
   return (
@@ -127,75 +118,37 @@ const Dashboard = () => {
         </CardHeader>
         <CardContent>
           {error ? (
-            <Alert variant="destructive" className="mb-4">
-              <AlertCircle className="h-4 w-4" />
-              <AlertTitle>Error</AlertTitle>
-              <AlertDescription>{error}</AlertDescription>
-            </Alert>
+            <ErrorDisplay message={error} />
           ) : profile ? (
             <div className="space-y-6">
-              <div className="flex items-center space-x-4">
-                <Avatar className="h-20 w-20">
-                  <AvatarFallback className="text-xl">
-                    {profile.full_name?.split(' ').map(n => n[0]).join('') || '?'}
-                  </AvatarFallback>
-                </Avatar>
-                <div>
-                  <h2 className="text-2xl font-bold">{profile.full_name || 'Anonymous User'}</h2>
-                  <Badge variant="secondary" className="mt-1">
-                    {profile.role.charAt(0).toUpperCase() + profile.role.slice(1)}
-                  </Badge>
-                </div>
-              </div>
-
+              <ProfileHeader profile={profile} />
               <div className="grid gap-4 md:grid-cols-2">
                 {email && (
-                  <Card>
-                    <CardContent className="pt-6">
-                      <div className="flex items-center space-x-2">
-                        <Mail className="h-4 w-4 opacity-70" />
-                        <span className="text-sm font-medium">Email</span>
-                      </div>
-                      <p className="mt-1 text-sm">{email}</p>
-                    </CardContent>
-                  </Card>
+                  <ProfileInfoCard
+                    icon={Mail}
+                    label="Email"
+                    value={email}
+                  />
                 )}
-
                 {profile.company_name && (
-                  <Card>
-                    <CardContent className="pt-6">
-                      <div className="flex items-center space-x-2">
-                        <Building2 className="h-4 w-4 opacity-70" />
-                        <span className="text-sm font-medium">Company</span>
-                      </div>
-                      <p className="mt-1 text-sm">{profile.company_name}</p>
-                    </CardContent>
-                  </Card>
+                  <ProfileInfoCard
+                    icon={Building2}
+                    label="Company"
+                    value={profile.company_name}
+                  />
                 )}
-
                 {profile.phone && (
-                  <Card>
-                    <CardContent className="pt-6">
-                      <div className="flex items-center space-x-2">
-                        <Phone className="h-4 w-4 opacity-70" />
-                        <span className="text-sm font-medium">Phone</span>
-                      </div>
-                      <p className="mt-1 text-sm">{profile.phone}</p>
-                    </CardContent>
-                  </Card>
+                  <ProfileInfoCard
+                    icon={Phone}
+                    label="Phone"
+                    value={profile.phone}
+                  />
                 )}
-
-                <Card>
-                  <CardContent className="pt-6">
-                    <div className="flex items-center space-x-2">
-                      <CalendarDays className="h-4 w-4 opacity-70" />
-                      <span className="text-sm font-medium">Member Since</span>
-                    </div>
-                    <p className="mt-1 text-sm">
-                      {new Date(profile.created_at).toLocaleDateString()}
-                    </p>
-                  </CardContent>
-                </Card>
+                <ProfileInfoCard
+                  icon={CalendarDays}
+                  label="Member Since"
+                  value={new Date(profile.created_at).toLocaleDateString()}
+                />
               </div>
             </div>
           ) : null}
