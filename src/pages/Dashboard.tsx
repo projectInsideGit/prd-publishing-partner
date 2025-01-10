@@ -3,10 +3,10 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { CalendarDays, Building2, Phone, Mail } from "lucide-react";
+import { CalendarDays, Building2, Phone, Mail, AlertCircle } from "lucide-react";
 import type { Database } from "@/integrations/supabase/types";
 
 type Profile = Database['public']['Tables']['profiles']['Row'];
@@ -27,25 +27,28 @@ const Dashboard = () => {
           return;
         }
 
+        console.log("Session found:", session.user.id);
         setEmail(session.user.email);
 
-        const { data: profile, error } = await supabase
+        const { data: profile, error: profileError } = await supabase
           .from('profiles')
           .select('*')
           .eq('id', session.user.id)
           .maybeSingle();
 
-        if (error) {
-          console.error('Error fetching profile:', error);
+        if (profileError) {
+          console.error('Error fetching profile:', profileError);
           setError('Failed to load profile data. Please try again later.');
           return;
         }
 
         if (!profile) {
-          setError('Profile not found. Please contact support.');
+          console.error('No profile found for user:', session.user.id);
+          setError('Your profile could not be found. This might happen if your account was not properly set up. Please contact support for assistance.');
           return;
         }
 
+        console.log("Profile loaded successfully:", profile);
         setProfile(profile);
       } catch (err) {
         console.error('Error in checkUser:', err);
@@ -73,7 +76,7 @@ const Dashboard = () => {
       <div className="min-h-screen bg-background p-4">
         <Card>
           <CardContent className="p-6">
-            <p className="text-center">Loading...</p>
+            <p className="text-center">Loading your profile...</p>
           </CardContent>
         </Card>
       </div>
@@ -88,13 +91,13 @@ const Dashboard = () => {
           <Button variant="outline" onClick={handleSignOut}>Sign Out</Button>
         </CardHeader>
         <CardContent>
-          {error && (
+          {error ? (
             <Alert variant="destructive" className="mb-4">
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>Error</AlertTitle>
               <AlertDescription>{error}</AlertDescription>
             </Alert>
-          )}
-          
-          {profile && (
+          ) : profile ? (
             <div className="space-y-6">
               <div className="flex items-center space-x-4">
                 <Avatar className="h-20 w-20">
@@ -103,7 +106,7 @@ const Dashboard = () => {
                   </AvatarFallback>
                 </Avatar>
                 <div>
-                  <h2 className="text-2xl font-bold">{profile.full_name}</h2>
+                  <h2 className="text-2xl font-bold">{profile.full_name || 'Anonymous User'}</h2>
                   <Badge variant="secondary" className="mt-1">
                     {profile.role.charAt(0).toUpperCase() + profile.role.slice(1)}
                   </Badge>
@@ -160,7 +163,7 @@ const Dashboard = () => {
                 </Card>
               </div>
             </div>
-          )}
+          ) : null}
         </CardContent>
       </Card>
     </div>
