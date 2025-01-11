@@ -12,6 +12,8 @@ import AdminDashboard from "./pages/admin/AdminDashboard";
 import SellerDashboard from "./pages/seller/SellerDashboard";
 import BuyerDashboard from "./pages/buyer/BuyerDashboard";
 import TransporterDashboard from "./pages/transporter/TransporterDashboard";
+import InventoryManagement from "./pages/seller/InventoryManagement";
+import NewInventoryItem from "./pages/seller/NewInventoryItem";
 
 const queryClient = new QueryClient();
 
@@ -48,10 +50,26 @@ const App = () => (
 
           {/* Seller routes */}
           <Route
-            path="/seller/*"
+            path="/seller"
             element={
               <ProtectedRoute allowedRoles={["seller"]}>
                 <SellerDashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/seller/inventory"
+            element={
+              <ProtectedRoute allowedRoles={["seller"]}>
+                <InventoryManagement />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/seller/inventory/new"
+            element={
+              <ProtectedRoute allowedRoles={["seller"]}>
+                <NewInventoryItem />
               </ProtectedRoute>
             }
           />
