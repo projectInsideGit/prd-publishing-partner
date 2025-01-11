@@ -34,7 +34,7 @@ const UserLogs = () => {
         .from('user_logs')
         .select(`
           *,
-          profiles:user_id (
+          profiles:user_id(
             full_name,
             company_name
           )
