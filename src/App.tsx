@@ -8,6 +8,10 @@ import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
 import Unauthorized from "./pages/Unauthorized";
+import AdminDashboard from "./pages/admin/AdminDashboard";
+import SellerDashboard from "./pages/seller/SellerDashboard";
+import BuyerDashboard from "./pages/buyer/BuyerDashboard";
+import TransporterDashboard from "./pages/transporter/TransporterDashboard";
 
 const queryClient = new QueryClient();
 
@@ -21,11 +25,53 @@ const App = () => (
           <Route path="/" element={<Index />} />
           <Route path="/auth" element={<Auth />} />
           <Route path="/unauthorized" element={<Unauthorized />} />
+          
+          {/* General dashboard route */}
           <Route
             path="/dashboard"
             element={
               <ProtectedRoute>
                 <Dashboard />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Admin routes */}
+          <Route
+            path="/admin/*"
+            element={
+              <ProtectedRoute allowedRoles={["admin"]}>
+                <AdminDashboard />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Seller routes */}
+          <Route
+            path="/seller/*"
+            element={
+              <ProtectedRoute allowedRoles={["seller"]}>
+                <SellerDashboard />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Buyer routes */}
+          <Route
+            path="/buyer/*"
+            element={
+              <ProtectedRoute allowedRoles={["buyer"]}>
+                <BuyerDashboard />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Transporter routes */}
+          <Route
+            path="/transporter/*"
+            element={
+              <ProtectedRoute allowedRoles={["transporter"]}>
+                <TransporterDashboard />
               </ProtectedRoute>
             }
           />
