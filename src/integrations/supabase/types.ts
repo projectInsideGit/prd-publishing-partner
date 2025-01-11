@@ -9,6 +9,45 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      inventory_items: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          location: string
+          quantity: number
+          seller_id: string | null
+          status: string
+          unit_price: number
+          updated_at: string
+          waste_type: Database["public"]["Enums"]["cotton_waste_type"]
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          location: string
+          quantity: number
+          seller_id?: string | null
+          status?: string
+          unit_price: number
+          updated_at?: string
+          waste_type: Database["public"]["Enums"]["cotton_waste_type"]
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          location?: string
+          quantity?: number
+          seller_id?: string | null
+          status?: string
+          unit_price?: number
+          updated_at?: string
+          waste_type?: Database["public"]["Enums"]["cotton_waste_type"]
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           company_name: string | null
@@ -71,6 +110,7 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
+      cotton_waste_type: "yarn_waste" | "comber_noil" | "flat_strips" | "other"
       user_role: "seller" | "buyer" | "admin" | "transporter"
     }
     CompositeTypes: {
