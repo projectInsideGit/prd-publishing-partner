@@ -15,6 +15,9 @@ import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/components/ui/use-toast";
+import { Database } from "@/integrations/supabase/types";
+
+type UserRole = Database['public']['Enums']['user_role'];
 
 const UserManagement = () => {
   const navigate = useNavigate();
@@ -39,7 +42,7 @@ const UserManagement = () => {
     }
   });
 
-  const handleUpdateRole = async (userId: string, newRole: string) => {
+  const handleUpdateRole = async (userId: string, newRole: UserRole) => {
     try {
       const { error } = await supabase
         .from('profiles')
@@ -104,7 +107,7 @@ const UserManagement = () => {
                 <select
                   className="border rounded p-1"
                   value={user.role}
-                  onChange={(e) => handleUpdateRole(user.id, e.target.value)}
+                  onChange={(e) => handleUpdateRole(user.id, e.target.value as UserRole)}
                 >
                   <option value="buyer">Buyer</option>
                   <option value="seller">Seller</option>

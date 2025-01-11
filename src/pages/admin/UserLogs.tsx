@@ -14,6 +14,14 @@ import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { format } from "date-fns";
+import { Database } from "@/integrations/supabase/types";
+
+type UserLog = Database['public']['Tables']['user_logs']['Row'] & {
+  profiles?: {
+    full_name: string | null;
+    company_name: string | null;
+  } | null;
+};
 
 const UserLogs = () => {
   const navigate = useNavigate();
@@ -39,7 +47,7 @@ const UserLogs = () => {
       }
 
       console.log('Fetched logs:', data);
-      return data;
+      return data as UserLog[];
     }
   });
 
