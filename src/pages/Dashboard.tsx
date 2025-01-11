@@ -1,159 +1,177 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { CalendarDays, Building2, Phone, Mail } from "lucide-react";
 import type { Database } from "@/integrations/supabase/types";
-import { ProfileHeader } from "@/components/dashboard/ProfileHeader";
-import { ProfileInfoCard } from "@/components/dashboard/ProfileInfoCard";
-import { ErrorDisplay } from "@/components/dashboard/ErrorDisplay";
-import { LoadingState } from "@/components/dashboard/LoadingState";
+import { Button } from "@/components/ui/button";
+import { useNavigate } from "react-router-dom";
+import { Loader2 } from "lucide-react";
 
-type Profile = Database['public']['Tables']['profiles']['Row'];
+type Profile = Database["public"]["Tables"]["profiles"]["Row"];
+type UserRole = Database["public"]["Enums"]["user_role"];
+
+const RoleSpecificContent = ({ role }: { role: UserRole }) => {
+  switch (role) {
+    case "buyer":
+      return (
+        <div className="space-y-4">
+          <h2 className="text-2xl font-bold">Available Products</h2>
+          <p className="text-gray-600">Browse and purchase cotton waste products here.</p>
+          {/* Add buyer-specific features here */}
+        </div>
+      );
+    case "seller":
+      return (
+        <div className="space-y-4">
+          <h2 className="text-2xl font-bold">My Inventory</h2>
+          <p className="text-gray-600">Manage your cotton waste listings here.</p>
+          {/* Add seller-specific features here */}
+        </div>
+      );
+    case "admin":
+      return (
+        <div className="space-y-4">
+          <h2 className="text-2xl font-bold">Admin Dashboard</h2>
+          <p className="text-gray-600">Manage users and platform activities.</p>
+          {/* Add admin-specific features here */}
+        </div>
+      );
+    case "transporter":
+      return (
+        <div className="space-y-4">
+          <h2 className="text-2xl font-bold">Shipments</h2>
+          <p className="text-gray-600">Manage deliveries and track shipments.</p>
+          {/* Add transporter-specific features here */}
+        </div>
+      );
+    default:
+      return null;
+  }
+};
 
 const Dashboard = () => {
   const navigate = useNavigate();
   const [profile, setProfile] = useState<Profile | null>(null);
-  const [email, setEmail] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const checkUser = async () => {
+    const fetchProfile = async () => {
       try {
-        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+        const { data: { session } } = await supabase.auth.getSession();
         
-        if (sessionError) {
-          console.error('Session error:', sessionError);
-          setError('Failed to get session. Please try logging in again.');
-          return;
-        }
-
-        if (!session) {
-          console.log('No session found, redirecting to auth');
+        if (!session?.user) {
           navigate("/auth");
           return;
         }
 
-        console.log("Session user ID:", session.user.id);
-        setEmail(session.user.email);
-
-        const { data: existingProfile, error: profileError } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', session.user.id)
+        const { data: profileData, error: profileError } = await supabase
+          .from("profiles")
+          .select("*")
+          .eq("id", session.user.id)
           .maybeSingle();
 
         if (profileError) {
-          console.error('Error fetching profile:', profileError);
-          setError('Failed to load profile data. Please try again later.');
-          return;
+          throw profileError;
         }
 
-        if (!existingProfile) {
-          console.log('No profile found, creating new profile...');
-          const { data: newProfile, error: insertError } = await supabase
-            .from('profiles')
-            .insert([
-              {
-                id: session.user.id,
-                full_name: '',
-                role: 'buyer'
-              }
-            ])
-            .select()
-            .maybeSingle();
-
-          if (insertError) {
-            console.error('Failed to create profile:', insertError);
-            setError('Failed to create your profile. Please contact support.');
-            return;
-          }
-
-          if (!newProfile) {
-            console.error('Profile creation succeeded but no data returned');
-            setError('Error setting up your profile. Please try refreshing the page.');
-            return;
-          }
-
-          console.log('New profile created successfully:', newProfile);
-          setProfile(newProfile);
-        } else {
-          console.log('Existing profile found:', existingProfile);
-          setProfile(existingProfile);
+        if (!profileData) {
+          throw new Error("Profile not found");
         }
 
+        console.log("Profile loaded:", profileData);
+        setProfile(profileData);
       } catch (err) {
-        console.error('Unexpected error in checkUser:', err);
-        setError('An unexpected error occurred. Please try again later.');
+        console.error("Error fetching profile:", err);
+        setError(err instanceof Error ? err.message : "An error occurred");
       } finally {
         setLoading(false);
       }
     };
 
-    checkUser();
+    fetchProfile();
   }, [navigate]);
 
   const handleSignOut = async () => {
     try {
       await supabase.auth.signOut();
-      navigate("/auth");
-    } catch (err) {
-      console.error('Error signing out:', err);
-      setError('Failed to sign out. Please try again.');
+      navigate("/");
+    } catch (error) {
+      console.error("Error signing out:", error);
     }
   };
 
   if (loading) {
-    return <LoadingState />;
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center space-y-4">
+          <h2 className="text-2xl font-bold text-red-600">Error</h2>
+          <p className="text-gray-600">{error}</p>
+          <Button onClick={() => navigate("/")}>Back to Home</Button>
+        </div>
+      </div>
+    );
+  }
+
+  if (!profile) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center space-y-4">
+          <h2 className="text-2xl font-bold text-red-600">Profile Not Found</h2>
+          <p className="text-gray-600">Unable to load your profile information.</p>
+          <Button onClick={() => navigate("/")}>Back to Home</Button>
+        </div>
+      </div>
+    );
   }
 
   return (
-    <div className="min-h-screen bg-background p-4 space-y-4">
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle>Dashboard</CardTitle>
-          <Button variant="outline" onClick={handleSignOut}>Sign Out</Button>
-        </CardHeader>
-        <CardContent>
-          {error ? (
-            <ErrorDisplay message={error} />
-          ) : profile ? (
-            <div className="space-y-6">
-              <ProfileHeader profile={profile} />
-              <div className="grid gap-4 md:grid-cols-2">
-                {email && (
-                  <ProfileInfoCard
-                    icon={Mail}
-                    label="Email"
-                    value={email}
-                  />
-                )}
-                {profile.company_name && (
-                  <ProfileInfoCard
-                    icon={Building2}
-                    label="Company"
-                    value={profile.company_name}
-                  />
-                )}
-                {profile.phone && (
-                  <ProfileInfoCard
-                    icon={Phone}
-                    label="Phone"
-                    value={profile.phone}
-                  />
-                )}
-                <ProfileInfoCard
-                  icon={CalendarDays}
-                  label="Member Since"
-                  value={new Date(profile.created_at).toLocaleDateString()}
-                />
+    <div className="min-h-screen bg-gray-50">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="space-y-6">
+          <div className="flex justify-between items-center">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900">Welcome, {profile.full_name}</h1>
+              <p className="text-gray-600">Role: {profile.role}</p>
+            </div>
+            <Button onClick={handleSignOut} variant="outline">
+              Sign Out
+            </Button>
+          </div>
+          
+          <div className="bg-white shadow rounded-lg p-6">
+            <h2 className="text-xl font-semibold mb-4">Profile Information</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <p className="text-sm text-gray-500">Full Name</p>
+                <p className="font-medium">{profile.full_name || "Not provided"}</p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-500">Company</p>
+                <p className="font-medium">{profile.company_name || "Not provided"}</p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-500">Phone</p>
+                <p className="font-medium">{profile.phone || "Not provided"}</p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-500">Member Since</p>
+                <p className="font-medium">{new Date(profile.created_at).toLocaleDateString()}</p>
               </div>
             </div>
-          ) : null}
-        </CardContent>
-      </Card>
+          </div>
+          
+          <div className="bg-white shadow rounded-lg p-6">
+            <RoleSpecificContent role={profile.role} />
+          </div>
+        </div>
+      </div>
     </div>
   );
 };
